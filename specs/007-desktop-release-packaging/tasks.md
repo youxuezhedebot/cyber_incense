@@ -33,7 +33,7 @@
 
 - [x] T006 [US1] Add `dist`, `dist:mac`, `dist:win`, and `dist:dir` npm scripts in `package.json`.
 - [x] T007 [US1] Run `npm run dist:dir` locally and confirm the unpacked app launches without the Vite dev server.
-- [x] T008 [US1] Run `npm run dist:mac` on macOS and confirm DMG/ZIP artifacts are generated.
+- [x] T008 [US1] Run `npm run dist:mac` on macOS and confirm DMG artifacts are generated.
 - [x] T009 [US2] Document that `npm run dist:win` should be validated on Windows or Windows CI rather than assumed from macOS.
 - [x] T010 [US4] Verify missing signing credentials do not fail unsigned local packaging.
 
@@ -50,7 +50,7 @@
 - [x] T013 [US3] Add a Windows release job that runs `npm ci`, validation commands, and `npm run dist:win`.
 - [x] T014 [US3] Upload release artifacts from each platform job to the tag's GitHub Release.
 - [x] T015 [US3] Upload package output as workflow artifacts for debugging when release upload fails.
-- [x] T016 [US3] Ensure artifact glob patterns only match intended DMG/ZIP/EXE files.
+- [x] T016 [US3] Ensure artifact glob patterns only match intended DMG/EXE files.
 
 **Checkpoint**: Pushing a version tag starts native platform packaging and release upload.
 
@@ -76,7 +76,7 @@
 - [x] T023 Run `npm run smoke:ritual-engine` and confirm ritual engine behavior still passes.
 - [x] T024 Run `npm run build` and confirm production build still passes.
 - [ ] T025 Run local package command on macOS and smoke test the packaged app.
-  - Local DMG/ZIP creation and packaged process launch were verified on macOS; full tray click / incense / wooden fish manual smoke remains.
+  - Local DMG creation and packaged process launch were verified on macOS; full tray click / incense / wooden fish manual smoke remains.
 - [ ] T026 Validate Windows packaging in GitHub Actions or on a Windows machine.
   - A Windows EXE was produced by local cross-build on macOS; install/run validation still belongs on Windows or CI.
 - [x] T027 Confirm packaged app does not require `VITE_DEV_SERVER_URL`.

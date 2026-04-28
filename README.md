@@ -8,10 +8,23 @@
 
 如果已经有发布包，直接从 GitHub Release 下载对应平台的安装包：
 
-- macOS: DMG / ZIP
+- macOS: DMG
 - Windows: EXE
 
-当前包默认是 unsigned early build。macOS Gatekeeper 或 Windows SmartScreen 可能会弹出警告，这是预期行为。更完整的发布说明见 [docs/release.md](docs/release.md)。
+当前 macOS 包默认是 ad-hoc signed early build，还没有 Apple Developer ID 公证。macOS Gatekeeper 可能会提示“已损坏”或阻止打开；这通常不是下载文件真的坏了，而是未公证应用被隔离拦截。更完整的发布说明见 [docs/release.md](docs/release.md)。
+
+macOS 首次打开可能需要手动授权：
+
+1. 把 `Cyber Incense.app` 拖到 `/Applications`。
+2. 右键点击应用，选择 `打开`，再确认打开。
+3. 如果仍被拦截，到 `系统设置` -> `隐私与安全性`，在安全提示处选择 `仍要打开`。
+4. 如果是你自己信任的测试包，也可以在安装到 Applications 后移除隔离属性再打开：
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Cyber Incense.app"
+```
+
+这个授权只是让 macOS 放行未公证测试包，不会给应用额外系统权限。
 
 启动后：
 
@@ -77,7 +90,7 @@ npm run smoke:ritual-engine
 npm run dist:dir
 ```
 
-生成 macOS DMG/ZIP：
+生成 macOS DMG：
 
 ```bash
 npm run dist:mac
@@ -91,7 +104,7 @@ npm run dist:win
 
 ## GitHub Release
 
-项目包含 GitHub Actions release workflow。推送版本 tag 后会尝试构建桌面安装包并附加到 GitHub Release：
+项目包含 GitHub Actions release workflow。推送 `v*.*.*` 版本 tag 后会构建桌面安装包，并自动创建或更新同名 GitHub Release，把 macOS DMG 和 Windows EXE 附加进去：
 
 ```bash
 git tag v0.1.0
@@ -108,7 +121,7 @@ tag 版本需要和 `package.json` 的 `version` 一致。
 - 点击“敲木鱼”，木鱼会有敲击动画、痕迹和计数。
 - 记录今日上香数、总功德数、木鱼次数等本地状态。
 - 提供设置界面，可以调整窗口、声音、视觉节奏等。
-- 支持打包成 macOS DMG/ZIP 和 Windows EXE。
+- 支持打包成 macOS DMG 和 Windows EXE。
 
 ## 它不会做什么
 

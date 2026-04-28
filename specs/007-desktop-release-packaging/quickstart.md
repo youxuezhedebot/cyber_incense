@@ -16,7 +16,6 @@ Expected output:
 ```txt
 release/
   Cyber-Incense-<version>-mac-<arch>.dmg
-  Cyber-Incense-<version>-mac-<arch>.zip
 ```
 
 Open the generated app or DMG, then verify:
@@ -84,7 +83,7 @@ Cyber Incense <version>
 This is an early desktop build.
 
 Downloads:
-- macOS DMG/ZIP
+- macOS DMG
 - Windows installer EXE
 
 Notes:

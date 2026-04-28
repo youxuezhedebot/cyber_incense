@@ -7,7 +7,7 @@
 **Rationale**:
 
 - It supports Electron apps with Vite-style build output.
-- It can produce macOS DMG/ZIP and Windows NSIS EXE installers from one config model.
+- It can produce macOS DMG and Windows NSIS EXE installers from one config model.
 - It has established GitHub release publishing support and can also be used with explicit workflow upload steps.
 - It keeps the implementation small compared with adopting a larger scaffolding framework.
 
