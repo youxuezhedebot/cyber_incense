@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cyber Incense State v1",
+  "type": "object",
+  "required": [
+    "version",
+    "today",
+    "todayPrayerCount",
+    "totalPrayerCount",
+    "muyuCount",
+    "lastPrayerAt",
+    "lastMuyuAt",
+    "blessingLevel",
+    "codexHook",
+    "settings"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "today": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "todayPrayerCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalPrayerCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "muyuCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "lastPrayerAt": {
+      "type": ["string", "null"]
+    },
+    "lastMuyuAt": {
+      "type": ["string", "null"]
+    },
+    "blessingLevel": {
+      "type": "string",
+      "enum": ["初燃", "稳定", "香火渐盛", "香火鼎盛", "功德圆满"]
+    },
+    "codexHook": {
+      "type": "object",
+      "required": ["enabled", "installedAt", "lastCheckedAt"],
+      "properties": {
+        "enabled": { "const": false },
+        "installedAt": { "type": ["string", "null"] },
+        "lastCheckedAt": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "object",
+      "required": ["soundEnabled", "launchAtLogin", "theme", "compactMode"],
+      "properties": {
+        "soundEnabled": { "type": "boolean" },
+        "launchAtLogin": { "type": "boolean" },
+        "theme": { "const": "dark" },
+        "compactMode": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

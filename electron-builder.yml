@@ -1,0 +1,51 @@
+appId: com.cyberincense.app
+productName: Cyber Incense
+copyright: Copyright © 2026 Cyber Incense Contributors
+
+directories:
+  output: release
+
+asar: true
+npmRebuild: false
+
+files:
+  - from: dist
+    to: dist
+    filter:
+      - "**/*"
+  - from: dist-electron
+    to: dist-electron
+    filter:
+      - "**/*"
+  - from: assets
+    to: assets
+    filter:
+      - "**/*"
+  - package.json
+
+mac:
+  category: public.app-category.productivity
+  icon: assets/icons/app-icon.icns
+  artifactName: Cyber-Incense-${version}-mac-${arch}.${ext}
+  target:
+    - target: dmg
+
+dmg:
+  sign: false
+  writeUpdateInfo: false
+
+win:
+  icon: assets/icons/app-icon.ico
+  artifactName: Cyber-Incense-${version}-win-${arch}.${ext}
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Cyber Incense
