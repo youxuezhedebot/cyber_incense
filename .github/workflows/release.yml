@@ -1,0 +1,154 @@
+name: Release Desktop Packages
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify tag matches package version
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${TAG_NAME#v}"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag $TAG_NAME does not match package.json version $PACKAGE_VERSION"
+            exit 1
+          fi
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          cat > release-notes.md <<'NOTES'
+          Cyber Incense desktop package.
+
+          Notes:
+          - These early packages are unsigned unless this release explicitly says otherwise.
+          - macOS Gatekeeper or Windows SmartScreen may warn on first launch.
+          - Ritual state is stored locally on your machine.
+          - This package does not install or modify any Codex hook.
+          NOTES
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release edit "$TAG_NAME" --title "Cyber Incense $TAG_NAME" --notes-file release-notes.md
+          else
+            gh release create "$TAG_NAME" --title "Cyber Incense $TAG_NAME" --notes-file release-notes.md
+          fi
+
+  build-macos:
+    name: Build macOS package
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate icons
+        run: npm run generate:icons
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Ritual engine smoke
+        run: npm run smoke:ritual-engine
+
+      - name: Build renderer and Electron
+        run: npm run build
+
+      - name: Package macOS artifacts
+        run: npm run dist:mac:ci
+
+      - name: Upload macOS workflow artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyber-incense-macos
+          path: |
+            release/*.dmg
+            release/*.zip
+          if-no-files-found: ignore
+
+      - name: Upload macOS release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: gh release upload "$TAG_NAME" release/*.dmg release/*.zip --clobber
+
+  build-windows:
+    name: Build Windows package
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate icons
+        run: npm run generate:icons
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Ritual engine smoke
+        run: npm run smoke:ritual-engine
+
+      - name: Build renderer and Electron
+        run: npm run build
+
+      - name: Package Windows artifact
+        run: npm run dist:win
+
+      - name: Upload Windows workflow artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyber-incense-windows
+          path: release/*.exe
+          if-no-files-found: ignore
+
+      - name: Upload Windows release asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $assets = Get-ChildItem -Path release -Filter *.exe
+          if ($assets.Count -eq 0) {
+            throw "No Windows .exe artifacts were produced."
+          }
+          gh release upload $env:TAG_NAME @($assets.FullName) --clobber
