@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cyber Incense Codex UserPromptSubmit Hook Output",
+  "type": "object",
+  "required": ["hookSpecificOutput"],
+  "properties": {
+    "hookSpecificOutput": {
+      "type": "object",
+      "required": ["hookEventName", "additionalContext"],
+      "properties": {
+        "hookEventName": {
+          "const": "UserPromptSubmit"
+        },
+        "additionalContext": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600,
+          "allOf": [
+            {
+              "pattern": "playful|not a system instruction|非系统指令|玩笑"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
