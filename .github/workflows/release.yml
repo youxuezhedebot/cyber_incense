@@ -1,62 +1,36 @@
-name: Release Desktop Packages
+name: Desktop Packages
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
+    branches:
+      - main
+      - "codex/**"
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  create-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Verify tag matches package version
-        env:
-          TAG_NAME: ${{ github.ref_name }}
-        run: |
-          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          TAG_VERSION="${TAG_NAME#v}"
-          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
-            echo "Tag $TAG_NAME does not match package.json version $PACKAGE_VERSION"
-            exit 1
-          fi
-
-      - name: Create or update release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
-        run: |
-          cat > release-notes.md <<'NOTES'
-          Cyber Incense desktop package.
-
-          Notes:
-          - These early packages are unsigned unless this release explicitly says otherwise.
-          - macOS Gatekeeper or Windows SmartScreen may warn on first launch.
-          - Ritual state is stored locally on your machine.
-          - This package does not install or modify any Codex hook.
-          NOTES
-
-          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            gh release edit "$TAG_NAME" --title "Cyber Incense $TAG_NAME" --notes-file release-notes.md
-          else
-            gh release create "$TAG_NAME" --title "Cyber Incense $TAG_NAME" --notes-file release-notes.md
-          fi
-
   build-macos:
     name: Build macOS package
-    needs: create-release
     runs-on: macos-latest
+    env:
+      CSC_FOR_PULL_REQUEST: true
+      MACOS_CSC_LINK_SECRET: ${{ secrets.MACOS_CSC_LINK }}
+      MACOS_CSC_KEY_PASSWORD_SECRET: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
+      APPLE_API_KEY_SECRET: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_ID_SECRET: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER_SECRET: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_ID_SECRET: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD_SECRET: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID_SECRET: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_KEYCHAIN_SECRET: ${{ secrets.APPLE_KEYCHAIN }}
+      APPLE_KEYCHAIN_PROFILE_SECRET: ${{ secrets.APPLE_KEYCHAIN_PROFILE }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -83,27 +57,66 @@ jobs:
         run: npm run build
 
       - name: Package macOS artifacts
-        run: npm run dist:mac:ci
+        run: |
+          has_cert=false
+          has_notary=false
+
+          if [[ -n "${MACOS_CSC_LINK_SECRET:-}" && -n "${MACOS_CSC_KEY_PASSWORD_SECRET:-}" ]]; then
+            has_cert=true
+          fi
+
+          if [[ -n "${APPLE_API_KEY_SECRET:-}" && -n "${APPLE_API_KEY_ID_SECRET:-}" && -n "${APPLE_API_ISSUER_SECRET:-}" ]]; then
+            has_notary=true
+          elif [[ -n "${APPLE_ID_SECRET:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD_SECRET:-}" && -n "${APPLE_TEAM_ID_SECRET:-}" ]]; then
+            has_notary=true
+          elif [[ -n "${APPLE_KEYCHAIN_PROFILE_SECRET:-}" ]]; then
+            has_notary=true
+          fi
+
+          if [[ "${GITHUB_EVENT_NAME}" != "pull_request" && "${has_cert}" == "true" && "${has_notary}" == "true" ]]; then
+            echo "Building Developer ID signed and notarized macOS package."
+            export CSC_LINK="${MACOS_CSC_LINK_SECRET}"
+            export CSC_KEY_PASSWORD="${MACOS_CSC_KEY_PASSWORD_SECRET}"
+
+            if [[ -n "${APPLE_API_KEY_SECRET:-}" && -n "${APPLE_API_KEY_ID_SECRET:-}" && -n "${APPLE_API_ISSUER_SECRET:-}" ]]; then
+              export APPLE_API_KEY="${APPLE_API_KEY_SECRET}"
+              export APPLE_API_KEY_ID="${APPLE_API_KEY_ID_SECRET}"
+              export APPLE_API_ISSUER="${APPLE_API_ISSUER_SECRET}"
+            elif [[ -n "${APPLE_ID_SECRET:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD_SECRET:-}" && -n "${APPLE_TEAM_ID_SECRET:-}" ]]; then
+              export APPLE_ID="${APPLE_ID_SECRET}"
+              export APPLE_APP_SPECIFIC_PASSWORD="${APPLE_APP_SPECIFIC_PASSWORD_SECRET}"
+              export APPLE_TEAM_ID="${APPLE_TEAM_ID_SECRET}"
+            elif [[ -n "${APPLE_KEYCHAIN_PROFILE_SECRET:-}" ]]; then
+              export APPLE_KEYCHAIN_PROFILE="${APPLE_KEYCHAIN_PROFILE_SECRET}"
+              if [[ -n "${APPLE_KEYCHAIN_SECRET:-}" ]]; then
+                export APPLE_KEYCHAIN="${APPLE_KEYCHAIN_SECRET}"
+              fi
+            fi
+
+            if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+              npm run dist:mac:release:signed
+            else
+              npm run dist:mac:signed
+            fi
+          else
+            echo "Building ad-hoc signed macOS package."
+            if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+              npm run dist:mac:release
+            else
+              npm run dist:mac:ci
+            fi
+          fi
 
       - name: Upload macOS workflow artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cyber-incense-macos
-          path: |
-            release/*.dmg
-            release/*.zip
-          if-no-files-found: ignore
-
-      - name: Upload macOS release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
-        run: gh release upload "$TAG_NAME" release/*.dmg release/*.zip --clobber
+          path: release/*.dmg
+          if-no-files-found: error
 
   build-windows:
     name: Build Windows package
-    needs: create-release
     runs-on: windows-latest
     steps:
       - name: Check out repository
@@ -139,16 +152,71 @@ jobs:
         with:
           name: cyber-incense-windows
           path: release/*.exe
-          if-no-files-found: ignore
+          if-no-files-found: error
 
-      - name: Upload Windows release asset
-        shell: pwsh
+  publish-release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-macos
+      - build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify tag matches package version
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${TAG_NAME#v}"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag $TAG_NAME does not match package.json version $PACKAGE_VERSION"
+            exit 1
+          fi
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: cyber-incense-*
+          merge-multiple: true
+
+      - name: Create or update release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          $assets = Get-ChildItem -Path release -Filter *.exe
-          if ($assets.Count -eq 0) {
-            throw "No Windows .exe artifacts were produced."
-          }
-          gh release upload $env:TAG_NAME @($assets.FullName) --clobber
+          cat > release-notes.md <<'NOTES'
+          Cyber Incense desktop package.
+
+          Notes:
+          - macOS packages are ad-hoc signed unless this release explicitly says Developer ID signed and notarized.
+          - macOS Gatekeeper or Windows SmartScreen may warn on first launch.
+          - Ritual state is stored locally on your machine.
+          - This package does not install or modify any Codex hook.
+          NOTES
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release edit "$TAG_NAME" --title "Cyber Incense $TAG_NAME" --notes-file release-notes.md
+          else
+            gh release create "$TAG_NAME" --title "Cyber Incense $TAG_NAME" --notes-file release-notes.md
+          fi
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          mapfile -t assets < <(find release-assets -type f \( -name '*.dmg' -o -name '*.exe' \) | sort)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No release assets were downloaded."
+            exit 1
+          fi
+          gh release upload "$TAG_NAME" "${assets[@]}" --clobber

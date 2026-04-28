@@ -42,7 +42,6 @@ artifactName: "${productName}-${version}-${os}-${arch}.${ext}"
 mac:
   target:
     - dmg
-    - zip
 win:
   target:
     - nsis

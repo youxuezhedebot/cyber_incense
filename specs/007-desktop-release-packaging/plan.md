@@ -12,7 +12,7 @@ The implementation should be deliberately small:
 ```txt
 npm run build
 └─ electron-builder
-   ├─ macOS: dmg/zip
+   ├─ macOS: dmg
    └─ Windows: nsis exe
 ```
 
@@ -69,7 +69,7 @@ flowchart TD
   C --> D["npm run smoke:ritual-engine"]
   D --> E["npm run build"]
   E --> F["electron-builder"]
-  F --> G["macOS dmg/zip"]
+  F --> G["macOS dmg"]
   F --> H["Windows nsis exe"]
   G --> I["GitHub Release assets"]
   H --> I

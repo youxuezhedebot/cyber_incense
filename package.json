@@ -17,8 +17,11 @@
     "smoke:ritual-engine": "npm run build:electron && node scripts/ritual-engine-smoke.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
     "dist": "npm run generate:icons && npm run build && electron-builder --publish never",
-    "dist:mac": "npm run generate:icons && npm run build && electron-builder --mac --publish never",
-    "dist:mac:ci": "npm run generate:icons && npm run build && electron-builder --mac --x64 --arm64 --publish never",
+    "dist:mac": "npm run generate:icons && npm run build && electron-builder --mac dmg --publish never -c.mac.identity=-",
+    "dist:mac:ci": "npm run generate:icons && npm run build && electron-builder --mac dmg --publish never -c.mac.identity=-",
+    "dist:mac:release": "npm run generate:icons && npm run build && electron-builder --mac dmg --x64 --arm64 --publish never -c.mac.identity=-",
+    "dist:mac:signed": "npm run generate:icons && npm run build && electron-builder --mac dmg --publish never",
+    "dist:mac:release:signed": "npm run generate:icons && npm run build && electron-builder --mac dmg --x64 --arm64 --publish never",
     "dist:win": "npm run generate:icons && npm run build && electron-builder --win --publish never",
     "dist:dir": "npm run generate:icons && npm run build && electron-builder --dir --publish never"
   },

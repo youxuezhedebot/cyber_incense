@@ -27,10 +27,8 @@ mac:
   category: public.app-category.productivity
   icon: assets/icons/app-icon.icns
   artifactName: Cyber-Incense-${version}-mac-${arch}.${ext}
-  identity: null
   target:
     - target: dmg
-    - target: zip
 
 dmg:
   sign: false
